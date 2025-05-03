@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import List, Dict, Union, Optional
-from services.data_loaders import load_excel, load_csv
+from services.data_manager.data_loaders import load_excel, load_csv
 
 
 class UnsupportedFileTypeError(Exception):

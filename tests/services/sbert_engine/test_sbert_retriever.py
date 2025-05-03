@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from services import sbert_search
+from services.sbert_engine import sbert_retriever
 
 
 def test_semantic_search_returns_top_k():
@@ -10,7 +10,7 @@ def test_semantic_search_returns_top_k():
     )
     query_embedding = np.array([1.0, 0.0, 0.0])  # Should match best with index 0 or 1
 
-    results = sbert_search.get_top_cosine_matches(
+    results = sbert_retriever.get_top_cosine_matches(
         query_embedding, corpus_embeddings, top_k=2
     )
 
@@ -26,4 +26,4 @@ def test_semantic_search_invalid_input_shape():
     query = np.random.rand(2, 3)  # Invalid: 2D query
 
     with pytest.raises(Exception):  # Should fail due to shape
-        sbert_search.get_top_cosine_matches(query, corpus)
+        sbert_retriever.get_top_cosine_matches(query, corpus)

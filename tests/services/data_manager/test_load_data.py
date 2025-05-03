@@ -1,6 +1,6 @@
 import pytest
-from services import load_data
-from services.load_data import UnsupportedFileTypeError
+from services.data_manager import load_data
+from services.data_manager.load_data import UnsupportedFileTypeError
 from pathlib import Path
 
 

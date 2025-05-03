@@ -9,6 +9,7 @@ numpy = "*"
 pydantic = "*"
 sentence-transformers = "*"
 python-dotenv = "*"
+flet = "==0.27.6"
 
 [dev-packages]
 pytest = "*"

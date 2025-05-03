@@ -4,6 +4,19 @@ from services.data_manager.load_data import UnsupportedFileTypeError
 from pathlib import Path
 
 
+def test_dispatch_excel_list_sheets():
+    path = Path("tests/test_files/sample.xlsx")
+    sheets = load_data.list_sheets(path)
+    assert isinstance(sheets, list)
+    assert "Sheet1" in sheets
+
+
+def test_dispatch_csv_list_sheets_returns_none():
+    path = Path("tests/test_files/sample.csv")
+    sheets = load_data.list_sheets(path)
+    assert sheets is None
+
+
 def test_dispatch_csv_list_columns():
     path = Path("tests/test_files/sample.csv")
     result = load_data.list_columns(path)

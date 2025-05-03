@@ -11,6 +11,16 @@ def _get_extension(file_path: Union[str, Path]) -> str:
     return str(file_path).lower().split(".")[-1]
 
 
+def list_sheets(file_path: Union[str, Path]) -> Optional[List[str]]:
+    ext = _get_extension(file_path)
+    if ext in ("xlsx", "xls"):
+        return load_excel.list_sheets(file_path)
+    elif ext == "csv":
+        return None  # CSV has no sheets
+    else:
+        raise UnsupportedFileTypeError(f"Unsupported file type: {file_path}")
+
+
 def list_columns(
     file_path: Union[str, Path], sheet_name: Optional[str] = None
 ) -> List[str]:

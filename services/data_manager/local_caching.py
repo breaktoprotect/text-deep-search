@@ -34,12 +34,14 @@ def save_metadata(file_id: str, metadata: FileMetadata) -> None:
 
 def save_sentences(file_id: str, sentences: List[str]) -> None:
     cache_dir = get_cache_dir(file_id)
+    cache_dir.mkdir(parents=True, exist_ok=True)
     with open(cache_dir / "sentences.json", "w", encoding="utf-8") as f:
         json.dump(sentences, f, indent=2)
 
 
 def save_embeddings(file_id: str, embeddings: np.ndarray) -> None:
     cache_dir = get_cache_dir(file_id)
+    cache_dir.mkdir(parents=True, exist_ok=True)
     np.save(cache_dir / "embeddings.npy", embeddings)
 
 

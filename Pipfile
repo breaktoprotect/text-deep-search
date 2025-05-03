@@ -5,6 +5,10 @@ name = "pypi"
 
 [packages]
 openpyxl = "*"
+numpy = "*"
+pydantic = "*"
+sentence-transformers = "*"
+python-dotenv = "*"
 
 [dev-packages]
 pytest = "*"

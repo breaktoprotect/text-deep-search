@@ -66,7 +66,7 @@ def prepare_corpus(
     local_caching.save_records(embedding_id, records)
     local_caching.save_metadata(metadata)
 
-    return embedding_id
+    return embedding_id, metadata  # <- return newly created metadata
 
 
 def query_corpus(

@@ -29,8 +29,15 @@ def test_prepare_and_query_corpus_csv():
     columns = ["Name", "City"]
     model_key = "MiniLM-L6-v2"
 
-    embedding_id = semantic_search.prepare_corpus(path, None, columns, model_key)
+    embedding_id, metadata = semantic_search.prepare_corpus(
+        path, None, columns, model_key
+    )
     assert embedding_id
+    assert metadata.file_name == "sample.csv"
+    assert metadata.columns == columns
+    assert metadata.sheet_name is None
+    assert metadata.model_key == model_key
+    assert metadata.embedding_id == embedding_id
 
     results = semantic_search.query_corpus(
         "Singapore", embedding_id, model_key, top_k=3

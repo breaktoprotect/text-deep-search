@@ -2,12 +2,11 @@ from pathlib import Path
 from typing import List, Tuple, Optional, Dict
 
 from services.data_manager import load_data, local_caching, output_export
-from services.data_manager.data_loaders import load_excel, load_csv
 from services.sbert_engine import sbert_embedder, sbert_retriever
-from models.file_metadata import FileMetadata
+from models.embeddings_metadata import EmbeddingMetadata
 
 
-def list_cached_file_ids() -> List[FileMetadata]:
+def list_cached_embedding_metadata() -> List[EmbeddingMetadata]:
     cached = []
     for cache_dir in local_caching.CACHE_ROOT.iterdir():
         metadata_path = cache_dir / "metadata.json"
@@ -37,49 +36,45 @@ def inspect_file(file_path: Path) -> Dict[str, Optional[List[str]]]:
 def prepare_corpus(
     file_path: Path, sheet_name: Optional[str], columns: List[str], model_key: str
 ) -> str:
-    file_id = local_caching.generate_file_id(file_path)
-    cache_dir = local_caching.get_cache_dir(file_id)
+    file_hash = local_caching.generate_file_hash(file_path)
+    embedding_id = local_caching.compute_embedding_id(
+        file_hash, columns, model_key, sheet_name
+    )
+
+    if local_caching.is_cached(embedding_id):
+        print(f"✅ Reusing cached embedding: {embedding_id}")
+        return embedding_id
 
     records = load_data.extract_data(file_path, sheet_name, columns)
     sentences = [
         " ".join(str(r[col]) for col in columns if col in r and r[col] is not None)
         for r in records
     ]
+    embeddings = sbert_embedder.embed_sentences(sentences, model_key)
 
-    embeddings_path = cache_dir / "embeddings.npy"
-    metadata_path = cache_dir / "metadata.json"
+    metadata = EmbeddingMetadata(
+        embedding_id=embedding_id,
+        file_hash=file_hash,
+        file_name=file_path.name,
+        model_key=model_key,
+        columns=columns,
+        sheet_name=sheet_name,
+    )
 
-    needs_embedding = True
-    if metadata_path.exists() and embeddings_path.exists():
-        meta = local_caching.load_metadata(file_id)
-        if meta.model_key == model_key and meta.columns == columns:
-            needs_embedding = False
+    local_caching.save_embeddings(embedding_id, embeddings)
+    local_caching.save_sentences(embedding_id, sentences)
+    local_caching.save_records(embedding_id, records)
+    local_caching.save_metadata(metadata)
 
-    if needs_embedding:
-        embeddings = sbert_embedder.embed_sentences(sentences, model_key)
-        local_caching.save_embeddings(file_id, embeddings)
-        local_caching.save_sentences(file_id, sentences)
-        local_caching.save_records(file_id, records)
-        local_caching.save_metadata(
-            file_id,
-            FileMetadata(
-                file_id=file_id,
-                file_name=file_path.name,
-                model_key=model_key,
-                sheet_name=sheet_name,
-                columns=columns,
-            ),
-        )
-
-    return file_id
+    return embedding_id
 
 
 def query_corpus(
-    query: str, file_id: str, model_key: str, top_k: int = 5
+    query: str, embedding_id: str, model_key: str, top_k: int = 5
 ) -> List[Tuple[dict, float]]:
     query_vec = sbert_embedder.embed_query(query, model_key)
-    corpus_vecs = local_caching.load_embeddings(file_id)
-    records = local_caching.load_records(file_id)
+    corpus_vecs = local_caching.load_embeddings(embedding_id)
+    records = local_caching.load_records(embedding_id)
 
     matches = sbert_retriever.get_top_cosine_matches(query_vec, corpus_vecs, top_k)
     return [(records[idx], score) for idx, score in matches]

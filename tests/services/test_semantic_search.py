@@ -27,12 +27,14 @@ def test_inspect_file_excel():
 def test_prepare_and_query_corpus_csv():
     path = TEST_FILES / "sample.csv"
     columns = ["Name", "City"]
-    model = "MiniLM-L6-v2"
+    model_key = "MiniLM-L6-v2"
 
-    file_id = semantic_search.prepare_corpus(path, None, columns, model)
-    assert file_id
+    embedding_id = semantic_search.prepare_corpus(path, None, columns, model_key)
+    assert embedding_id
 
-    results = semantic_search.query_corpus("Singapore", file_id, model, top_k=3)
+    results = semantic_search.query_corpus(
+        "Singapore", embedding_id, model_key, top_k=3
+    )
     assert len(results) > 0
     assert isinstance(results[0][0], dict)
     assert isinstance(results[0][1], float)

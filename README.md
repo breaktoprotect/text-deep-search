@@ -4,6 +4,8 @@
 
 Designed for enterprise users working with corpora of ~<10k records — ideal for cybersecurity, GRC, or other specialized data analysis needs.
 
+Powered by **Sentence Transformers**, a family of machine learning models that convert text into dense vector embeddings for fast and accurate similarity comparisons.
+
 ![Teddy Search Demo](teddysearch_v0.1.0-alpha.gif)
 
 ---

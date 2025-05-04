@@ -1,4 +1,4 @@
-from services.data_loaders import load_excel
+from services.data_manager.data_loaders import load_excel
 from pathlib import Path
 
 

@@ -3,13 +3,6 @@ import numpy as np
 from services.sbert_engine import sbert_embedder
 
 
-def test_list_supported_models():
-    models = sbert_embedder.list_supported_models()
-    assert isinstance(models, list)
-    assert "MiniLM-L6-v2" in models
-    assert "MPNet-base-v2" in models
-
-
 def test_get_model_returns_model_instance():
     model = sbert_embedder.get_model("MiniLM-L6-v2")
     assert model is not None

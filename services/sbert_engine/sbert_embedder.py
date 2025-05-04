@@ -1,27 +1,15 @@
 from sentence_transformers import SentenceTransformer
-from typing import List, Tuple
+from typing import List
 import numpy as np
-import os
-from dotenv import load_dotenv
 
-# Load .env
-load_dotenv()
-
-# Registry of human-readable keys → HuggingFace model names
-SUPPORTED_MODELS = {
-    "MiniLM-L6-v2": "sentence-transformers/paraphrase-MiniLM-L6-v2",
-    "MPNet-base-v2": "sentence-transformers/all-mpnet-base-v2",
-}
-DEFAULT_MODEL_ID = os.getenv("TEDDY_SEARCH_DEFAULT_MODEL", "MiniLM-L6-v2")
-
-# ? Model cache
-# TODO: move it somewhere more global?
-_model_cache = {}  # Model cache (per backend name)
+from services.sbert_engine.sbert_model_registry import (
+    SUPPORTED_MODELS,
+    DEFAULT_MODEL_ID,
+)
 
 
-def list_supported_models() -> List[str]:
-    """Return list of model keys for UI dropdown or config."""
-    return list(SUPPORTED_MODELS.keys())
+# ? Model cache (per HuggingFace model path)
+_model_cache = {}
 
 
 def get_model(model_key: str = DEFAULT_MODEL_ID) -> SentenceTransformer:

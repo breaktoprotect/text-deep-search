@@ -4,6 +4,8 @@
 
 Designed for enterprise users working with corpora of ~<10k records — ideal for cybersecurity, GRC, or other specialized data analysis needs.
 
+![Teddy Search Demo](teddysearch_v0.1.0-alpha.gif)
+
 ---
 
 ## ⚙️ Optional: `.env` Overrides
@@ -12,3 +14,4 @@ You may create a `.env` file at the root of the project to override default beha
 
 ```shell
 TEDDY_SEARCH_DEFAULT_MODEL="MiniLM-L6-v2"  # Must match one of the supported model keys
+```

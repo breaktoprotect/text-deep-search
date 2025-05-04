@@ -1,6 +1,7 @@
 # Custom
 cache/
 tests/test_outputs/
+RELEASE_NOTES.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

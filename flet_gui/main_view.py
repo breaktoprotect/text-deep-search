@@ -1,0 +1,199 @@
+import flet as ft
+from pathlib import Path
+from services import semantic_search
+from flet_gui.gui_state import AppState
+
+app_state = AppState()
+
+
+def main(page: ft.Page):
+    page.title = "🐾 Teddy Search"
+    page.scroll = True
+
+    # Use real default model
+    DEFAULT_MODEL = semantic_search.sbert_embedder.DEFAULT_MODEL_ID
+
+    # UI state components
+    results_output = ft.Column(scroll="auto", expand=True)
+    metadata_display = ft.Text("No file loaded.")
+    export_button = ft.ElevatedButton("Export Results", disabled=True)
+
+    # Dialog state
+    file_state = {"file_path": None}
+    sheet_dropdown = ft.Dropdown(label="Select Sheet", visible=False)
+    columns_column = ft.Column(scroll="auto", height=200)
+    dialog_status = ft.Text()
+
+    def on_query(e=None):
+        results_output.controls.clear()
+        if not app_state.embedding_id:
+            results_output.controls.append(ft.Text("⚠️ No embedding loaded."))
+            page.update()
+            return
+
+        query = query_input.value.strip()
+        if not query:
+            return
+
+        results_output.controls.append(ft.Text("🔎 Searching..."))
+        page.update()
+
+        results = semantic_search.query_corpus(
+            query, app_state.embedding_id, DEFAULT_MODEL, top_k=5
+        )
+        app_state.results = results
+
+        results_output.controls.clear()
+        for i, (record, score) in enumerate(results):
+            results_output.controls.append(ft.Text(f"{i+1}. [{score:.4f}] {record}"))
+        export_button.disabled = False
+        page.update()
+
+    # Must come after on_query is defined
+    query_input = ft.TextField(label="Enter query", expand=True, on_submit=on_query)
+
+    def build_dialog(file_path: Path, sheets: list, columns: list):
+        sheet_dropdown.visible = bool(sheets)
+        sheet_dropdown.options = (
+            [ft.dropdown.Option(s) for s in sheets] if sheets else []
+        )
+        sheet_dropdown.value = sheets[0] if sheets else None
+
+        columns_column.controls.clear()
+        for col in columns:
+            columns_column.controls.append(ft.Checkbox(label=col, value=True))
+
+        def update_columns_for_sheet(e):
+            selected_sheet = sheet_dropdown.value
+            new_columns = semantic_search.load_data.list_columns(
+                file_path, selected_sheet
+            )
+            columns_column.controls.clear()
+            for col in new_columns:
+                columns_column.controls.append(ft.Checkbox(label=col, value=True))
+            page.update()
+
+        sheet_dropdown.on_change = update_columns_for_sheet
+
+        def on_prepare_clicked(e):
+            selected_columns = [cb.label for cb in columns_column.controls if cb.value]
+            if not selected_columns:
+                dialog_status.value = "⚠️ Select at least one column."
+                page.update()
+                return
+
+            dialog_status.value = "🔄 Generating embeddings..."
+            page.update()
+
+            sheet = sheet_dropdown.value if sheet_dropdown.visible else None
+            embedding_id, _ = semantic_search.prepare_corpus(
+                file_path, sheet, selected_columns, DEFAULT_MODEL
+            )
+
+            app_state.file_path = file_path
+            app_state.sheet = sheet
+            app_state.columns = selected_columns
+            app_state.embedding_id = embedding_id
+            app_state.results = []
+
+            metadata_display.value = f"📄 {file_path.name} - Selected Sheet: {sheet or 'N/A'}. Selected Columns: {', '.join(selected_columns)}"
+            export_button.disabled = True
+            query_input.value = ""
+            dialog.open = False
+            page.update()
+
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Configure Columns"),
+            content=ft.Column(
+                [
+                    sheet_dropdown,
+                    columns_column,
+                ]
+            ),
+            actions=[
+                dialog_status,
+                ft.TextButton("Prepare", on_click=on_prepare_clicked),
+                ft.TextButton(
+                    "Cancel", on_click=lambda e: setattr(dialog, "open", False)
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        return dialog
+
+    def on_file_picked(ev: ft.FilePickerResultEvent):
+        if not ev.files:
+            return
+        try:
+            file_path = Path(ev.files[0].path)
+            file_state["file_path"] = file_path
+            meta = semantic_search.inspect_file(file_path)
+            sheets = meta.get("sheets") or []
+            columns = meta.get("columns") or []
+
+            dialog_status.value = ""  # clear status every time
+            dialog = build_dialog(file_path, sheets, columns)
+            page.overlay.append(dialog)
+            dialog.open = True
+            page.update()
+        except Exception as ex:
+            page.snack_bar = ft.SnackBar(ft.Text(f"❌ Error: {ex}"))
+            page.snack_bar.open = True
+            page.update()
+
+    def on_setup(e):
+        file_picker = ft.FilePicker(on_result=on_file_picked)
+        page.overlay.append(file_picker)
+        page.update()
+        file_picker.pick_files(allow_multiple=False)
+
+    def on_export(e):
+        if not app_state.results:
+            return
+
+        def on_file_saved(ev: ft.FilePickerResultEvent):
+            if ev.path:
+                semantic_search.export_results(app_state.results, Path(ev.path))
+
+        picker = ft.FilePicker(on_result=on_file_saved)
+        page.overlay.append(picker)
+        page.update()
+        picker.save_file(file_type="any", allowed_extensions=["csv", "txt", "json"])
+
+    # page.add(
+    #     ft.Row(
+    #         [
+    #             ft.IconButton(icon=ft.icons.SETTINGS, on_click=on_setup),
+    #             query_input,
+    #             ft.IconButton(icon=ft.icons.SEARCH, on_click=on_query),
+    #         ]
+    #     ),
+    #     metadata_display,
+    #     results_output,
+    #     ft.Row([export_button], alignment=ft.MainAxisAlignment.END),
+    # )
+    page.add(
+        ft.Column(
+            controls=[
+                ft.Row(
+                    [
+                        ft.IconButton(icon=ft.icons.SETTINGS, on_click=on_setup),
+                        query_input,
+                        ft.IconButton(icon=ft.icons.SEARCH, on_click=on_query),
+                    ]
+                ),
+                metadata_display,
+                results_output,
+                ft.Row([export_button], alignment=ft.MainAxisAlignment.END),
+            ],
+            expand=True,
+            spacing=10,
+        )
+    )
+
+    export_button.on_click = on_export
+
+
+if __name__ == "__main__":
+    ft.app(target=main)

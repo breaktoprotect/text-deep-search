@@ -43,7 +43,8 @@ def prepare_corpus(
 
     if local_caching.is_cached(embedding_id):
         print(f"✅ Reusing cached embedding: {embedding_id}")
-        return embedding_id
+        metadata = local_caching.load_metadata(embedding_id)
+        return embedding_id, metadata
 
     records = load_data.extract_data(file_path, sheet_name, columns)
     sentences = [
@@ -66,7 +67,7 @@ def prepare_corpus(
     local_caching.save_records(embedding_id, records)
     local_caching.save_metadata(metadata)
 
-    return embedding_id, metadata  # <- return newly created metadata
+    return embedding_id, metadata
 
 
 def query_corpus(
